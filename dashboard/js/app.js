@@ -143,6 +143,24 @@ function renderStatsView(address, pool) {
 }
 
 /* ── Data fetching ───────────────────────────────────────────────────────── */
+async function fetchPoolList() {
+  const resp = await fetch("/api/pools", { cache: "no-store" });
+  const json = await resp.json();
+  if (!Array.isArray(json)) throw new Error("unexpected pools response");
+  return json;
+}
+
+async function fetchPoolData(pool) {
+  try {
+    const url = "/api/pool?pool=" + encodeURIComponent(pool);
+    const resp = await fetch(url, { cache: "no-store" });
+    const json = await resp.json();
+    return json;
+  } catch (_) {
+    return {};
+  }
+}
+
 async function fetchMinerData(address, pool) {
   const url = "/api/miner?address=" + encodeURIComponent(address)
             + "&pool=" + encodeURIComponent(pool);
