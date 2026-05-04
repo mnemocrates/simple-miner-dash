@@ -1,0 +1,16 @@
+# ── simple-miner-dash: Tor hidden service configuration ──────────────────────
+#
+# Append this block to /etc/tor/torrc on the STRATUM NODE, then reload Tor:
+#
+#   sudo tee -a /etc/tor/torrc < torrc.snippet
+#   sudo systemctl reload tor
+#
+# After reloading, read the assigned .onion address:
+#
+#   sudo cat /var/lib/tor/miner-service/hostname
+#
+# Copy that address into nginx-host/cgi-bin/miner_proxy.py as ONION_ADDRESS.
+# ─────────────────────────────────────────────────────────────────────────────
+
+HiddenServiceDir /var/lib/tor/miner-service/
+HiddenServicePort 80 127.0.0.1:5000

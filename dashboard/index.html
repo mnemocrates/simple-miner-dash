@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miner Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Rendered by js/app.js -->
+  </div>
+
+  <!-- Search view template -->
+  <template id="tpl-search">
+    <div class="view-search">
+      <div class="search-card">
+        <h1 class="brand">&#9889; Miner Dashboard</h1>
+        <p class="subtitle">Enter a Bitcoin address to view mining statistics.</p>
+        <form id="search-form" novalidate>
+          <div class="input-group">
+            <input
+              id="address-input"
+              type="text"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="bc1q… or 1… or 3…"
+              aria-label="Bitcoin address"
+              required
+            />
+            <button type="submit">Search</button>
+          </div>
+          <p id="search-error" class="field-error" hidden></p>
+        </form>
+      </div>
+    </div>
+  </template>
+
+  <!-- Stats view template -->
+  <template id="tpl-stats">
+    <div class="view-stats">
+      <header class="stats-header">
+        <a href="/" class="back-link" id="back-link">&#8592; New search</a>
+        <h1 class="brand">&#9889; Miner Dashboard</h1>
+        <div class="worker-select-wrap">
+          <label for="worker-select">Worker</label>
+          <select id="worker-select" aria-label="Select worker"></select>
+        </div>
+      </header>
+
+      <div id="address-display" class="address-display"></div>
+
+      <div id="error-banner" class="error-banner" hidden>
+        <span id="error-message"></span>
+        <a href="/" class="error-back">&#8592; Back to search</a>
+      </div>
+
+      <div id="stats-content" hidden>
+        <!-- Hashrate section -->
+        <section class="stats-section">
+          <h2 class="section-title">Hashrate</h2>
+          <div class="cards-grid" id="cards-hashrate"></div>
+        </section>
+
+        <!-- Shares section -->
+        <section class="stats-section">
+          <h2 class="section-title">Shares</h2>
+          <div class="cards-grid" id="cards-shares"></div>
+        </section>
+
+        <!-- Status section -->
+        <section class="stats-section">
+          <h2 class="section-title">Status</h2>
+          <div class="cards-grid" id="cards-status"></div>
+        </section>
+      </div>
+    </div>
+  </template>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+# ── simple-miner-dash nginx configuration (PUBLIC NGINX HOST) ─────────────────
+#
+# Prerequisites on this host:
+#   apt install fcgiwrap python3 python3-pip
+#   pip install requests[socks]
+#   systemctl enable --now fcgiwrap
+#
+# The CGI script must be executable:
+#   chmod +x /var/www/miner-dash/cgi-bin/miner_proxy.py
+#
+# Tor must be running on this host (for SOCKS5 at 127.0.0.1:9050).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Rate-limiting zone: max 20 requests/minute per IP to the proxy endpoint
+limit_req_zone $binary_remote_addr zone=miner_api:10m rate=20r/m;
+
+server {
+    listen 80;
+    server_name miner.example.com;
+
+    # Redirect HTTP → HTTPS (remove this block if not using TLS)
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name miner.example.com;
+
+    # TLS — use certbot / Let's Encrypt:
+    #   certbot --nginx -d miner.example.com
+    ssl_certificate     /etc/letsencrypt/live/miner.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/miner.example.com/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Dashboard static files
+    root  /var/www/miner-dash/dashboard;
+    index index.html;
+
+    # Security headers
+    add_header X-Content-Type-Options  "nosniff"           always;
+    add_header X-Frame-Options         "DENY"              always;
+    add_header Referrer-Policy         "no-referrer"       always;
+    add_header Content-Security-Policy
+        "default-src 'self'; style-src 'self'; script-src 'self'"
+        always;
+
+    # Serve static files; fall back to index.html for SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ── API endpoint: proxy to stratum node via miner_proxy.py CGI ───────────
+    location /api/miner {
+        limit_req zone=miner_api burst=5 nodelay;
+
+        # Only GET requests
+        limit_except GET { deny all; }
+
+        # Generous timeouts — Tor circuits can take 10–20 s to establish
+        fastcgi_read_timeout 30s;
+        fastcgi_send_timeout 30s;
+
+        include        fastcgi_params;
+        fastcgi_pass   unix:/var/run/fcgiwrap.socket;
+
+        # Point to the proxy CGI script (not in the web root — adjust if needed)
+        fastcgi_param  SCRIPT_FILENAME /var/www/miner-dash/cgi-bin/miner_proxy.py;
+        fastcgi_param  DOCUMENT_ROOT   $document_root;
+
+        # Pass the address query string to the CGI
+        fastcgi_param  QUERY_STRING    $query_string;
+        fastcgi_param  REQUEST_METHOD  $request_method;
+    }
+
+    # Block direct access to cgi-bin directory
+    location /cgi-bin/ {
+        deny all;
+    }
+
+    # Deny dot files
+    location ~ /\. {
+        deny all;
+    }
+}

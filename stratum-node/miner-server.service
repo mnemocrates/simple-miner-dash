@@ -1,0 +1,31 @@
+[Unit]
+Description=Miner status service for simple-miner-dash
+Documentation=https://github.com/yourrepo/simple-miner-dash
+After=network.target
+
+[Service]
+Type=simple
+User=miner-svc
+Group=miner-svc
+
+ExecStart=/usr/bin/python3 /opt/miner-service/server.py
+Restart=on-failure
+RestartSec=5
+
+# Harden the process: read-only access to ckpool user logs only
+ReadOnlyPaths=/var/log/ckpool-solo/users
+# Prevent writing anywhere else
+ReadWritePaths=
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+CapabilityBoundingSet=
+
+# Limit network to loopback (service should never reach the internet directly)
+RestrictAddressFamilies=AF_INET AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=127.0.0.1/8
+
+[Install]
+WantedBy=multi-user.target
