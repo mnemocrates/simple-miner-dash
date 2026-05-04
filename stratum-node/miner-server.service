@@ -13,7 +13,7 @@ Restart=on-failure
 RestartSec=5
 
 # Harden the process: read-only access to ckpool user logs only
-ReadOnlyPaths=/var/log/ckpool-solo/users
+ReadOnlyPaths=/var/log/ckpool-solo/users /var/log/ckpool-solo-lhr/users
 # Prevent writing anywhere else
 ReadWritePaths=
 PrivateTmp=true

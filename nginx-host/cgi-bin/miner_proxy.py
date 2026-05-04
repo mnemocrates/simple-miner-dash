@@ -34,6 +34,9 @@ REQUEST_TIMEOUT = 25
 
 # Strict Bitcoin address regex — mirrors server.py and app.js
 ADDRESS_RE = re.compile(r'^(bc1[a-z0-9]{25,90}|[13][a-zA-Z0-9]{25,34})$')
+
+# Whitelist of valid pool keys — must match USERS_DIRS keys in server.py
+ALLOWED_POOLS = {"default", "lhr"}
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -62,16 +65,21 @@ def main() -> None:
     if not address or not ADDRESS_RE.match(address):
         send_cgi_json(400, {"error": "invalid_address"})
 
+    # Validate pool (defense in depth — server.py validates independently)
+    pool = params.get("pool", "default").strip()
+    if pool not in ALLOWED_POOLS:
+        send_cgi_json(400, {"error": "invalid_pool"})
+
     # Import here so a missing package gives a clear 500 rather than crashing CGI
     try:
         import requests
     except ImportError:
         send_cgi_json(500, {"error": "internal_error"})
 
-    # Build the upstream URL — address is already validated, safe to interpolate
+    # Build the upstream URL — address and pool are already validated
     upstream_url = (
         f"http://{ONION_ADDRESS}:{ONION_PORT}/"
-        f"?address={address}"
+        f"?address={address}&pool={pool}"
     )
 
     # Route the request through the local Tor SOCKS5 proxy.

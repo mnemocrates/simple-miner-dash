@@ -19,10 +19,12 @@ import urllib.parse
 # Port to listen on (must match HiddenServicePort target in torrc.snippet)
 PORT = 5000
 
-# Path to ckpool user log directory.
-# For ckpool-solo:      /var/log/ckpool-solo/users
-# For ckpool-solo-lhr:  /var/log/ckpool-solo-lhr/users
-USERS_DIR = "/var/log/ckpool-solo/users"
+# Map of pool keys to ckpool user log directories.
+# Add or rename entries to match your ckpool instance directories.
+USERS_DIRS = {
+    "default": "/var/log/ckpool-solo/users",
+    "lhr":     "/var/log/ckpool-solo-lhr/users",
+}
 
 # Strict Bitcoin address regex: bech32 (bc1...) and legacy (1... / 3...)
 # Excludes path separators and all other filesystem-special characters.
@@ -63,11 +65,19 @@ class MinerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json(400, {"error": "invalid_address"})
                 return
 
+            # Validate and resolve pool
+            pool_list = params.get("pool", ["default"])
+            pool = pool_list[0].strip()
+            if pool not in USERS_DIRS:
+                self.send_json(400, {"error": "invalid_pool"})
+                return
+            users_dir = USERS_DIRS[pool]
+
             # Build path and apply path-traversal guard
-            users_dir_real = os.path.realpath(USERS_DIR)
+            users_dir_real = os.path.realpath(users_dir)
             candidate = os.path.realpath(os.path.join(users_dir_real, address))
 
-            # Ensure the resolved path stays inside USERS_DIR
+            # Ensure the resolved path stays inside the selected users_dir
             if not candidate.startswith(users_dir_real + os.sep):
                 self.send_json(404, {"error": "miner_not_found"})
                 return

@@ -2,6 +2,8 @@
 
 A privacy-preserving dashboard for ckpool solo mining statistics. The stratum node's IP address is never exposed to the public internet — all communication between the public dashboard and the stratum node travels over Tor.
 
+Supports multiple simultaneous ckpool instances (e.g. one tuned for standard hardware and one for LHR cards). A single `server.py` process and a single Tor hidden service serve all pools; users select the pool from a dropdown in the dashboard.
+
 ## Architecture
 
 ```
@@ -84,13 +86,23 @@ sudo chmod 750 /opt/miner-service/server.py
 ### 3. Configure the script
 Edit `/opt/miner-service/server.py` and set:
 ```python
-PORT      = 5000                          # keep default unless another service uses it
-USERS_DIR = "/var/log/ckpool-solo/users"  # adjust for your ckpool instance
+PORT = 5000  # keep default unless another service uses it
+
+# Map pool keys to their ckpool user log directories.
+# The key becomes the ?pool= URL parameter; add or rename entries as needed.
+USERS_DIRS = {
+    "default": "/var/log/ckpool-solo/users",
+    "lhr":     "/var/log/ckpool-solo-lhr/users",
+}
 ```
 
-### 4. Grant read access to the log directory
+If you only run one ckpool instance, keep a single entry in `USERS_DIRS` (the `"default"` key). The pool selector will still appear in the UI but will only have one option.
+
+### 4. Grant read access to the log directories
+Repeat for each directory listed in `USERS_DIRS`:
 ```bash
 sudo setfacl -R -m u:miner-svc:rX /var/log/ckpool-solo/users
+sudo setfacl -R -m u:miner-svc:rX /var/log/ckpool-solo-lhr/users
 # Or without ACLs:
 # sudo chown -R ckpool:miner-svc /var/log/ckpool-solo/users
 # sudo chmod -R 640 /var/log/ckpool-solo/users
@@ -143,10 +155,15 @@ sudo chmod +x /var/www/miner-dash/cgi-bin/miner_proxy.py
 ### 3. Configure the proxy script
 Edit `/var/www/miner-dash/cgi-bin/miner_proxy.py` and set:
 ```python
-ONION_ADDRESS = "abcdefghijklmnop.onion"  # from stratum node step 6
-ONION_PORT    = 80
+ONION_ADDRESS  = "abcdefghijklmnop.onion"  # from stratum node step 6
+ONION_PORT     = 80
 TOR_SOCKS_PORT = 9050
+
+# Must match the USERS_DIRS keys defined in server.py
+ALLOWED_POOLS = {"default", "lhr"}
 ```
+
+Keep `ALLOWED_POOLS` in sync with the `USERS_DIRS` dict in `server.py`. Both layers validate the pool key independently.
 
 ### 4. Configure nginx
 ```bash
@@ -174,9 +191,17 @@ sudo systemctl enable --now fcgiwrap
 
 ### On the stratum node
 ```bash
-# Test the HTTP service directly (no Tor)
-curl "http://127.0.0.1:5000/?address=<your-bitcoin-address>"
-# Expected: JSON miner stats
+# Test the default pool directly (no Tor)
+curl "http://127.0.0.1:5000/?address=<your-bitcoin-address>&pool=default"
+# Expected: JSON miner stats from /var/log/ckpool-solo/users/
+
+# Test the LHR pool directly
+curl "http://127.0.0.1:5000/?address=<your-bitcoin-address>&pool=lhr"
+# Expected: JSON miner stats from /var/log/ckpool-solo-lhr/users/
+
+# Test invalid pool rejection
+curl "http://127.0.0.1:5000/?address=<your-bitcoin-address>&pool=evil"
+# Expected: {"error": "invalid_pool"}
 
 # Test path traversal protection
 curl "http://127.0.0.1:5000/?address=../../etc/passwd"
@@ -185,25 +210,34 @@ curl "http://127.0.0.1:5000/?address=../../etc/passwd"
 
 ### On the public nginx host
 ```bash
-# Test the .onion reachability through Tor
-torsocks curl "http://<onion-address>.onion/?address=<your-bitcoin-address>"
+# Test the .onion reachability through Tor (default pool)
+torsocks curl "http://<onion-address>.onion/?address=<your-bitcoin-address>&pool=default"
 # Expected: JSON miner stats
 
 # Test the CGI proxy script directly
-QUERY_STRING="address=<your-bitcoin-address>" python3 /var/www/miner-dash/cgi-bin/miner_proxy.py
+QUERY_STRING="address=<your-bitcoin-address>&pool=default" python3 /var/www/miner-dash/cgi-bin/miner_proxy.py
 # Expected: CGI headers + JSON body
 
+QUERY_STRING="address=<your-bitcoin-address>&pool=lhr" python3 /var/www/miner-dash/cgi-bin/miner_proxy.py
+# Expected: CGI headers + JSON body (from LHR pool)
+
+# Test invalid pool rejection at proxy layer
+QUERY_STRING="address=<your-bitcoin-address>&pool=evil" python3 /var/www/miner-dash/cgi-bin/miner_proxy.py
+# Expected: {"error": "invalid_pool"}
+
 # Test the full nginx stack
-curl "https://miner.example.com/api/miner?address=<your-bitcoin-address>"
+curl "https://miner.example.com/api/miner?address=<your-bitcoin-address>&pool=default"
 # Expected: JSON miner stats
 ```
 
 ### In the browser
 1. Navigate to `https://miner.example.com`
-2. Enter a known Bitcoin address → miner statistics should display
-3. Select a specific worker from the dropdown → worker-specific stats appear
-4. Enter an unknown address → "Miner not found" message appears
-5. Check mobile layout (browser dev tools at 375 px width)
+2. Select a pool from the **Pool** dropdown ("Default" or "LHR")
+3. Enter a known Bitcoin address → miner statistics for that pool should display
+4. Switch the **Pool** dropdown in the stats header → page reloads showing stats from the other pool
+5. Select a specific worker from the **Worker** dropdown → worker-specific stats appear
+6. Enter an unknown address → "Miner not found" message appears
+7. Check mobile layout (browser dev tools at 375 px width)
 
 ---
 
@@ -211,6 +245,8 @@ curl "https://miner.example.com/api/miner?address=<your-bitcoin-address>"
 
 - `server.py` binds to `127.0.0.1` only and is additionally hardened by systemd (`IPAddressDeny=any`, `IPAddressAllow=127.0.0.1/8`, `ProtectSystem=strict`)
 - Both `server.py` and `miner_proxy.py` apply the same strict Bitcoin address regex and `os.path.realpath` path-traversal guard independently
+- Pool keys are validated against an explicit whitelist (`USERS_DIRS` in `server.py`, `ALLOWED_POOLS` in `miner_proxy.py`) at both layers independently — an unknown pool key is rejected before any filesystem access occurs
+- The path-traversal guard is applied per-pool: each pool key resolves to its own `users_dir`, and the guard ensures the resolved path stays strictly inside that directory
 - The `.onion` address is stored only in `miner_proxy.py` on the public host — it is never sent to the browser
 - `socks5h` (not `socks5`) is used so `.onion` DNS never touches the local resolver
 - The nginx config rate-limits `/api/miner` to 20 requests/minute per IP

@@ -32,6 +32,13 @@
             />
             <button type="submit">Search</button>
           </div>
+          <div class="pool-select-wrap">
+            <label for="pool-select">Pool</label>
+            <select id="pool-select" aria-label="Select pool">
+              <option value="default">Default</option>
+              <option value="lhr">LHR</option>
+            </select>
+          </div>
           <p id="search-error" class="field-error" hidden></p>
         </form>
       </div>
@@ -44,6 +51,13 @@
       <header class="stats-header">
         <a href="/" class="back-link" id="back-link">&#8592; New search</a>
         <h1 class="brand">&#9889; Miner Dashboard</h1>
+        <div class="pool-select-wrap">
+          <label for="pool-select">Pool</label>
+          <select id="pool-select" aria-label="Select pool">
+            <option value="default">Default</option>
+            <option value="lhr">LHR</option>
+          </select>
+        </div>
         <div class="worker-select-wrap">
           <label for="worker-select">Worker</label>
           <select id="worker-select" aria-label="Select worker"></select>

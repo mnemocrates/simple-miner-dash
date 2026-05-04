@@ -12,9 +12,10 @@ document.addEventListener("DOMContentLoaded", init);
 function init() {
   const params = new URLSearchParams(window.location.search);
   const address = (params.get("address") || "").trim();
+  const pool    = (params.get("pool")    || "default").trim();
 
   if (address) {
-    renderStatsView(address);
+    renderStatsView(address, pool);
   } else {
     renderSearchView();
   }
@@ -48,7 +49,9 @@ function renderSearchView() {
     }
 
     hideFieldError(errEl);
-    window.location.href = "/?address=" + encodeURIComponent(value);
+    const poolValue = app.querySelector("#pool-select").value;
+    window.location.href = "/?address=" + encodeURIComponent(value)
+                         + "&pool="    + encodeURIComponent(poolValue);
   });
 
   input.addEventListener("input", () => hideFieldError(errEl));
@@ -67,7 +70,7 @@ function hideFieldError(el) {
 /* ═══════════════════════════════════════════════════════════════════════════
    STATS VIEW
 ═══════════════════════════════════════════════════════════════════════════ */
-function renderStatsView(address) {
+function renderStatsView(address, pool) {
   const tpl = document.getElementById("tpl-stats");
   const app = document.getElementById("app");
   app.replaceChildren(tpl.content.cloneNode(true));
@@ -78,6 +81,14 @@ function renderStatsView(address) {
   // Back link preserves plain /
   app.querySelector("#back-link").setAttribute("href", "/");
 
+  // Set pool selector to current pool and handle switching
+  const poolSelect = app.querySelector("#pool-select");
+  poolSelect.value = pool;
+  poolSelect.addEventListener("change", () => {
+    window.location.href = "/?address=" + encodeURIComponent(address)
+                         + "&pool="    + encodeURIComponent(poolSelect.value);
+  });
+
   // Show loading spinner while fetching
   const statsContent  = app.querySelector("#stats-content");
   const errorBanner   = app.querySelector("#error-banner");
@@ -85,7 +96,7 @@ function renderStatsView(address) {
 
   showLoading(statsContent);
 
-  fetchMinerData(address)
+  fetchMinerData(address, pool)
     .then((data) => {
       hideLoading(statsContent);
       if (data.error) {
@@ -119,8 +130,9 @@ function renderStatsView(address) {
 }
 
 /* ── Data fetching ───────────────────────────────────────────────────────── */
-async function fetchMinerData(address) {
-  const url = "/api/miner?address=" + encodeURIComponent(address);
+async function fetchMinerData(address, pool) {
+  const url = "/api/miner?address=" + encodeURIComponent(address)
+            + "&pool=" + encodeURIComponent(pool);
   const resp = await fetch(url, { cache: "no-store" });
   const json = await resp.json();
   return json;
