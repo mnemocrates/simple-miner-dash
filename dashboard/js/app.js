@@ -29,9 +29,15 @@ function renderSearchView() {
   const app = document.getElementById("app");
   app.replaceChildren(tpl.content.cloneNode(true));
 
-  const form   = app.querySelector("#search-form");
-  const input  = app.querySelector("#address-input");
-  const errEl  = app.querySelector("#search-error");
+  const form      = app.querySelector("#search-form");
+  const input     = app.querySelector("#address-input");
+  const errEl     = app.querySelector("#search-error");
+  const poolSelect = app.querySelector("#pool-select");
+
+  // Populate pool selector dynamically
+  fetchPoolList()
+    .then((pools) => populatePoolSelect(poolSelect, pools, "default"))
+    .catch(() => populatePoolSelect(poolSelect, [{key: "default", label: "Default"}], "default"));
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -49,7 +55,7 @@ function renderSearchView() {
     }
 
     hideFieldError(errEl);
-    const poolValue = app.querySelector("#pool-select").value;
+    const poolValue = poolSelect.value || "default";
     window.location.href = "/?address=" + encodeURIComponent(value)
                          + "&pool="    + encodeURIComponent(poolValue);
   });
@@ -83,7 +89,6 @@ function renderStatsView(address, pool) {
 
   // Set pool selector to current pool and handle switching
   const poolSelect = app.querySelector("#pool-select");
-  poolSelect.value = pool;
   poolSelect.addEventListener("change", () => {
     window.location.href = "/?address=" + encodeURIComponent(address)
                          + "&pool="    + encodeURIComponent(poolSelect.value);
@@ -96,28 +101,36 @@ function renderStatsView(address, pool) {
 
   showLoading(statsContent);
 
-  fetchMinerData(address, pool)
-    .then((data) => {
+  Promise.all([fetchPoolList(), fetchPoolData(pool), fetchMinerData(address, pool)])
+    .then(([pools, poolData, minerData]) => {
       hideLoading(statsContent);
-      if (data.error) {
-        showError(errorBanner, errorMessage(data.error));
+
+      // Populate pool selector
+      populatePoolSelect(poolSelect, pools, pool);
+
+      if (minerData.error) {
+        showError(errorBanner, errorMessage(minerData.error));
+        // Still render pool stats even if miner lookup failed
+        renderPoolStatsCards(app, poolData);
+        statsContent.hidden = false;
         return;
       }
 
       // Populate worker dropdown
-      populateWorkerDropdown(workerSelect, data);
+      populateWorkerDropdown(workerSelect, minerData);
 
-      // Initial render: overall stats
+      // Render pool stats first, then miner stats
       statsContent.hidden = false;
-      renderStatsCards(app, data);
+      renderPoolStatsCards(app, poolData);
+      renderStatsCards(app, minerData);
 
       // Worker selection handler
       workerSelect.addEventListener("change", () => {
         const val = workerSelect.value;
         if (val === "__all__") {
-          renderStatsCards(app, data);
+          renderStatsCards(app, minerData);
         } else {
-          const workers = data.worker || [];
+          const workers = minerData.worker || [];
           const w = workers.find((wk) => wk.workername === val);
           if (w) renderStatsCards(app, w, /* isWorker */ true);
         }
@@ -137,7 +150,16 @@ async function fetchMinerData(address, pool) {
   const json = await resp.json();
   return json;
 }
-
+/* ── Pool selector helper ──────────────────────────────────────────────────────── */
+function populatePoolSelect(select, pools, currentKey) {
+  select.replaceChildren();
+  pools.forEach(({ key, label }) => {
+    const opt = new Option(label, key);
+    select.appendChild(opt);
+  });
+  select.value = currentKey;
+  select.disabled = false;
+}
 /* ── Worker dropdown ─────────────────────────────────────────────────────── */
 function populateWorkerDropdown(select, data) {
   const workers = data.worker || [];
@@ -167,6 +189,52 @@ function workerDisplayName(workername) {
 }
 
 /* ── Stats card rendering ────────────────────────────────────────────────── */
+function renderPoolStatsCards(app, data) {
+  const DASH = "—";
+
+  // Hashrate
+  const hr = app.querySelector("#cards-pool-hashrate");
+  if (hr) {
+    hr.replaceChildren(
+      makeCard(formatHashrate(data.hashrate1m),  "1 min",   hashrateClass(data.hashrate1m)),
+      makeCard(formatHashrate(data.hashrate5m),  "5 min",   hashrateClass(data.hashrate5m)),
+      makeCard(formatHashrate(data.hashrate15m), "15 min",  hashrateClass(data.hashrate15m)),
+      makeCard(formatHashrate(data.hashrate1hr), "1 hour",  hashrateClass(data.hashrate1hr)),
+      makeCard(formatHashrate(data.hashrate6hr), "6 hours", hashrateClass(data.hashrate6hr)),
+      makeCard(formatHashrate(data.hashrate1d),  "1 day",   hashrateClass(data.hashrate1d)),
+      makeCard(formatHashrate(data.hashrate7d),  "7 days",  hashrateClass(data.hashrate7d))
+    );
+  }
+
+  // Shares
+  const sh = app.querySelector("#cards-pool-shares");
+  if (sh) {
+    const diff = (data.diff !== undefined && data.diff !== null)
+      ? Number(data.diff).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : DASH;
+    sh.replaceChildren(
+      makeCard(formatLargeNumber(data.accepted),     "Accepted"),
+      makeCard(formatLargeNumber(data.rejected),     "Rejected",   data.rejected > 0 ? "red" : ""),
+      makeCard(formatLargeNumber(data.bestshare, 2), "Best Share", "accent", /* wide */ true),
+      makeCard(diff,                                 "Difficulty")
+    );
+  }
+
+  // Status
+  const st = app.querySelector("#cards-pool-status");
+  if (st) {
+    const cards = [
+      makeCard(formatUptime(data.runtime),       "Uptime",      "muted"),
+      makeCard(formatTimestamp(data.lastupdate), "Last Update", timestampClass(data.lastupdate)),
+    ];
+    if (data.Users        !== undefined) cards.push(makeCard(String(data.Users),        "Users",        data.Users > 0 ? "green" : "muted"));
+    if (data.Workers      !== undefined) cards.push(makeCard(String(data.Workers),      "Workers",      data.Workers > 0 ? "green" : "muted"));
+    if (data.Idle         !== undefined) cards.push(makeCard(String(data.Idle),         "Idle",         data.Idle > 0 ? "" : "muted"));
+    if (data.Disconnected !== undefined) cards.push(makeCard(String(data.Disconnected), "Disconnected", data.Disconnected > 0 ? "" : "muted"));
+    st.replaceChildren(...cards);
+  }
+}
+
 function renderStatsCards(app, data, isWorker = false) {
   renderHashrateCards(app.querySelector("#cards-hashrate"), data);
   renderSharesCards(app.querySelector("#cards-shares"), data);
@@ -251,10 +319,11 @@ function showError(bannerEl, message) {
 
 function errorMessage(code) {
   const map = {
-    miner_not_found: "Miner not found. Check the address and try again.",
-    invalid_address: "Invalid Bitcoin address.",
-    invalid_data:    "The miner data file could not be read.",
-    internal_error:  "A server error occurred. Please try again later.",
+    miner_not_found:         "Miner not found. Check the address and try again.",
+    invalid_address:         "Invalid Bitcoin address.",
+    invalid_data:            "The miner data file could not be read.",
+    internal_error:          "A server error occurred. Please try again later.",
+    pool_stats_unavailable:  "Pool statistics are temporarily unavailable.",
   };
   return map[code] || "An unexpected error occurred.";
 }
@@ -314,4 +383,19 @@ function timestampClass(epoch) {
   if (ageMin < 30) return "green";
   if (ageMin < 120) return "";
   return "muted";
+}
+
+/** Convert integer seconds to a human-readable uptime string: "Xd Xh Xm" */
+function formatUptime(seconds) {
+  if (seconds === undefined || seconds === null) return "—";
+  const s = Math.floor(Number(seconds));
+  if (isNaN(s) || s < 0) return "—";
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const parts = [];
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0) parts.push(`${h}h`);
+  parts.push(`${m}m`);
+  return parts.join(" ");
 }

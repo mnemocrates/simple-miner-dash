@@ -12,8 +12,9 @@ ExecStart=/usr/bin/python3 /opt/miner-service/server.py
 Restart=on-failure
 RestartSec=5
 
-# Harden the process: read-only access to ckpool user logs only
-ReadOnlyPaths=/var/log/ckpool-solo/users /var/log/ckpool-solo-lhr/users
+# Harden the process: read-only access to ckpool user logs and pool status files
+# When adding a new pool to POOLS in server.py, add its directories here too.
+ReadOnlyPaths=/var/log/ckpool-solo/users /var/log/ckpool-solo-lhr/users /var/log/ckpool-solo/pool /var/log/ckpool-solo-lhr/pool
 # Prevent writing anywhere else
 ReadWritePaths=
 PrivateTmp=true

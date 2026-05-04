@@ -34,9 +34,8 @@
           </div>
           <div class="pool-select-wrap">
             <label for="pool-select">Pool</label>
-            <select id="pool-select" aria-label="Select pool">
-              <option value="default">Default</option>
-              <option value="lhr">LHR</option>
+            <select id="pool-select" aria-label="Select pool" disabled>
+              <option value="">Loading…</option>
             </select>
           </div>
           <p id="search-error" class="field-error" hidden></p>
@@ -53,9 +52,8 @@
         <h1 class="brand">&#9889; Miner Dashboard</h1>
         <div class="pool-select-wrap">
           <label for="pool-select">Pool</label>
-          <select id="pool-select" aria-label="Select pool">
-            <option value="default">Default</option>
-            <option value="lhr">LHR</option>
+          <select id="pool-select" aria-label="Select pool" disabled>
+            <option value="">Loading…</option>
           </select>
         </div>
         <div class="worker-select-wrap">
@@ -72,6 +70,27 @@
       </div>
 
       <div id="stats-content" hidden>
+        <!-- ═══ Pool Statistics ═══════════════════════════════════════════ -->
+        <div class="stats-group-label">Pool Statistics</div>
+
+        <section class="stats-section">
+          <h2 class="section-title">Pool Hashrate</h2>
+          <div class="cards-grid" id="cards-pool-hashrate"></div>
+        </section>
+
+        <section class="stats-section">
+          <h2 class="section-title">Pool Shares</h2>
+          <div class="cards-grid" id="cards-pool-shares"></div>
+        </section>
+
+        <section class="stats-section">
+          <h2 class="section-title">Pool Status</h2>
+          <div class="cards-grid" id="cards-pool-status"></div>
+        </section>
+
+        <!-- ═══ Your Statistics ══════════════════════════════════════════ -->
+        <div class="stats-group-label">Your Statistics</div>
+
         <!-- Hashrate section -->
         <section class="stats-section">
           <h2 class="section-title">Hashrate</h2>

@@ -19,11 +19,20 @@ import urllib.parse
 # Port to listen on (must match HiddenServicePort target in torrc.snippet)
 PORT = 5000
 
-# Map of pool keys to ckpool user log directories.
-# Add or rename entries to match your ckpool instance directories.
-USERS_DIRS = {
-    "default": "/var/log/ckpool-solo/users",
-    "lhr":     "/var/log/ckpool-solo-lhr/users",
+# Pool registry.  Each key becomes the ?pool= URL parameter.
+# To add a new ckpool instance, append an entry here and update
+# ReadOnlyPaths in miner-server.service and ALLOWED_POOLS in miner_proxy.py.
+POOLS = {
+    "default": {
+        "label":       "Default",
+        "users_dir":   "/var/log/ckpool-solo/users",
+        "status_file": "/var/log/ckpool-solo/pool/pool.status",
+    },
+    "lhr": {
+        "label":       "LHR",
+        "users_dir":   "/var/log/ckpool-solo-lhr/users",
+        "status_file": "/var/log/ckpool-solo-lhr/pool/pool.status",
+    },
 }
 
 # Strict Bitcoin address regex: bech32 (bc1...) and legacy (1... / 3...)
@@ -49,9 +58,58 @@ class MinerHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        try:
-            parsed = urllib.parse.urlparse(self.path)
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/pools":
+            self._serve_pools_list()
+        elif parsed.path == "/pool":
             params = urllib.parse.parse_qs(parsed.query)
+            self._serve_pool_stats(params)
+        else:
+            params = urllib.parse.parse_qs(parsed.query)
+            self._serve_miner_stats(params)
+
+    def _serve_pools_list(self):
+        """Return the list of configured pool keys and labels."""
+        try:
+            payload = [{"key": k, "label": v["label"]} for k, v in POOLS.items()]
+            self.send_json(200, payload)
+        except Exception:
+            self.send_json(500, {"error": "internal_error"})
+
+    def _serve_pool_stats(self, params):
+        """Return merged pool.status JSON for the requested pool."""
+        try:
+            pool_list = params.get("pool", ["default"])
+            pool = pool_list[0].strip()
+            if pool not in POOLS:
+                self.send_json(400, {"error": "invalid_pool"})
+                return
+
+            # Path is entirely from the hardcoded POOLS dict — no user input
+            status_file = POOLS[pool]["status_file"]
+
+            with open(status_file, "r", encoding="utf-8") as fh:
+                lines = fh.read().splitlines()
+
+            # pool.status contains one JSON object per line; merge them all
+            merged = {}
+            for line in lines:
+                line = line.strip()
+                if line:
+                    merged.update(json.loads(line))
+
+            self.send_json(200, merged)
+
+        except (OSError, PermissionError):
+            self.send_json(404, {"error": "pool_stats_unavailable"})
+        except json.JSONDecodeError:
+            self.send_json(500, {"error": "invalid_data"})
+        except Exception:
+            self.send_json(500, {"error": "internal_error"})
+
+    def _serve_miner_stats(self, params):
+        """Return the ckpool user log JSON for the requested address and pool."""
+        try:
             address_list = params.get("address", [])
 
             if not address_list:
@@ -68,10 +126,10 @@ class MinerHandler(http.server.BaseHTTPRequestHandler):
             # Validate and resolve pool
             pool_list = params.get("pool", ["default"])
             pool = pool_list[0].strip()
-            if pool not in USERS_DIRS:
+            if pool not in POOLS:
                 self.send_json(400, {"error": "invalid_pool"})
                 return
-            users_dir = USERS_DIRS[pool]
+            users_dir = POOLS[pool]["users_dir"]
 
             # Build path and apply path-traversal guard
             users_dir_real = os.path.realpath(users_dir)

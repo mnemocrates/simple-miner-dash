@@ -118,6 +118,17 @@ a:hover { text-decoration: underline; }
   text-align: left;
 }
 
+/* Pool selector inside the search card */
+.search-card .pool-select-wrap {
+  justify-content: flex-start;
+  margin-top: .9rem;
+}
+
+.search-card #pool-select {
+  max-width: 100%;
+  width: auto;
+}
+
 /* ── Stats view ───────────────────────────────────────────────────────────── */
 .view-stats {
   min-height: 100vh;
@@ -157,12 +168,20 @@ a:hover { text-decoration: underline; }
   margin-left: auto;
 }
 
+.pool-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.pool-select-wrap label,
 .worker-select-wrap label {
   font-size: .85rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
+#pool-select,
 #worker-select {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -175,6 +194,7 @@ a:hover { text-decoration: underline; }
   transition: border-color .15s;
   max-width: 220px;
 }
+#pool-select:focus,
 #worker-select:focus { border-color: var(--accent); }
 
 .address-display {
@@ -211,6 +231,21 @@ a:hover { text-decoration: underline; }
 .error-back:hover { color: var(--text); }
 
 /* ── Stats sections & cards ───────────────────────────────────────────────── */
+.stats-group-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  padding-top: .75rem;
+  margin: 1.75rem 0 .75rem;
+}
+.stats-group-label:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+
 .stats-section {
   margin-bottom: 1.75rem;
 }
@@ -303,7 +338,9 @@ a:hover { text-decoration: underline; }
     align-items: flex-start;
   }
   .stats-header .brand { font-size: 1.1rem; }
+  .pool-select-wrap  { width: 100%; }
   .worker-select-wrap { margin-left: 0; width: 100%; }
+  #pool-select,
   #worker-select { max-width: 100%; width: 100%; }
   .cards-grid { grid-template-columns: repeat(2, 1fr); }
 }
