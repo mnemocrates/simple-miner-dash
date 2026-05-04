@@ -14,32 +14,35 @@
   <!-- Search view template -->
   <template id="tpl-search">
     <div class="view-search">
-      <div class="search-card">
-        <h1 class="brand">&#9889; Miner Dashboard</h1>
-        <p class="subtitle">Enter a Bitcoin address to view mining statistics.</p>
-        <form id="search-form" novalidate>
-          <div class="input-group">
-            <input
-              id="address-input"
-              type="text"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="none"
-              spellcheck="false"
-              placeholder="bc1q… or 1… or 3…"
-              aria-label="Bitcoin address"
-              required
-            />
-            <button type="submit">Search</button>
-          </div>
-          <div class="pool-select-wrap">
-            <label for="pool-select">Pool</label>
-            <select id="pool-select" aria-label="Select pool" disabled>
-              <option value="">Loading…</option>
-            </select>
-          </div>
-          <p id="search-error" class="field-error" hidden></p>
-        </form>
+      <div class="search-terminal">
+        <h1 class="brand">&gt; MINER_DASHBOARD</h1>
+        <p class="subtitle">ENTER BITCOIN ADDRESS:</p>
+        <fieldset class="search-card">
+          <legend>// query</legend>
+          <form id="search-form" novalidate>
+            <div class="input-group">
+              <input
+                id="address-input"
+                type="text"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="bc1q… or 1… or 3…"
+                aria-label="Bitcoin address"
+                required
+              />
+              <button type="submit">[ EXEC ]</button>
+            </div>
+            <div class="pool-select-wrap">
+              <label for="pool-select">Pool</label>
+              <select id="pool-select" aria-label="Select pool" disabled>
+                <option value="">Loading…</option>
+              </select>
+            </div>
+            <p id="search-error" class="field-error" hidden></p>
+          </form>
+        </fieldset>
       </div>
     </div>
   </template>
@@ -48,8 +51,8 @@
   <template id="tpl-stats">
     <div class="view-stats">
       <header class="stats-header">
-        <a href="/" class="back-link" id="back-link">&#8592; New search</a>
-        <h1 class="brand">&#9889; Miner Dashboard</h1>
+        <a href="/" class="back-link" id="back-link">[ BACK ]</a>
+        <h1 class="brand">&gt; MINER_DASHBOARD</h1>
         <div class="pool-select-wrap">
           <label for="pool-select">Pool</label>
           <select id="pool-select" aria-label="Select pool" disabled>
@@ -60,54 +63,52 @@
           <label for="worker-select">Worker</label>
           <select id="worker-select" aria-label="Select worker"></select>
         </div>
+        <span class="refresh-info" id="refresh-info"></span>
       </header>
 
       <div id="address-display" class="address-display"></div>
 
       <div id="error-banner" class="error-banner" hidden>
         <span id="error-message"></span>
-        <a href="/" class="error-back">&#8592; Back to search</a>
+        <a href="/" class="error-back">[ BACK TO SEARCH ]</a>
       </div>
 
       <div id="stats-content" hidden>
         <!-- ═══ Pool Statistics ═══════════════════════════════════════════ -->
         <div class="stats-group-label">Pool Statistics</div>
 
-        <section class="stats-section">
-          <h2 class="section-title">Pool Hashrate</h2>
+        <fieldset class="stats-section">
+          <legend>Pool Hashrate</legend>
           <div class="cards-grid" id="cards-pool-hashrate"></div>
-        </section>
+        </fieldset>
 
-        <section class="stats-section">
-          <h2 class="section-title">Pool Shares</h2>
+        <fieldset class="stats-section">
+          <legend>Pool Shares</legend>
           <div class="cards-grid" id="cards-pool-shares"></div>
-        </section>
+        </fieldset>
 
-        <section class="stats-section">
-          <h2 class="section-title">Pool Status</h2>
+        <fieldset class="stats-section">
+          <legend>Pool Status</legend>
           <div class="cards-grid" id="cards-pool-status"></div>
-        </section>
+        </fieldset>
 
         <!-- ═══ Your Statistics ══════════════════════════════════════════ -->
         <div class="stats-group-label">Your Statistics</div>
 
-        <!-- Hashrate section -->
-        <section class="stats-section">
-          <h2 class="section-title">Hashrate</h2>
+        <fieldset class="stats-section">
+          <legend>Hashrate</legend>
           <div class="cards-grid" id="cards-hashrate"></div>
-        </section>
+        </fieldset>
 
-        <!-- Shares section -->
-        <section class="stats-section">
-          <h2 class="section-title">Shares</h2>
+        <fieldset class="stats-section">
+          <legend>Shares</legend>
           <div class="cards-grid" id="cards-shares"></div>
-        </section>
+        </fieldset>
 
-        <!-- Status section -->
-        <section class="stats-section">
-          <h2 class="section-title">Status</h2>
+        <fieldset class="stats-section">
+          <legend>Status</legend>
           <div class="cards-grid" id="cards-status"></div>
-        </section>
+        </fieldset>
       </div>
     </div>
   </template>

@@ -89,7 +89,10 @@ function renderStatsView(address, pool) {
 
   // Set pool selector to current pool and handle switching
   const poolSelect = app.querySelector("#pool-select");
+  let refreshTimer = null;
+
   poolSelect.addEventListener("change", () => {
+    if (refreshTimer) clearInterval(refreshTimer);
     window.location.href = "/?address=" + encodeURIComponent(address)
                          + "&pool="    + encodeURIComponent(poolSelect.value);
   });
@@ -123,6 +126,7 @@ function renderStatsView(address, pool) {
       statsContent.hidden = false;
       renderPoolStatsCards(app, poolData);
       renderStatsCards(app, minerData);
+      setRefreshInfo(app);
 
       // Worker selection handler
       workerSelect.addEventListener("change", () => {
@@ -135,6 +139,31 @@ function renderStatsView(address, pool) {
           if (w) renderStatsCards(app, w, /* isWorker */ true);
         }
       });
+
+      // 30-second auto-refresh
+      refreshTimer = setInterval(() => {
+        const currentWorker = workerSelect.value;
+        Promise.all([fetchPoolData(pool), fetchMinerData(address, pool)])
+          .then(([newPoolData, newMinerData]) => {
+            renderPoolStatsCards(app, newPoolData);
+            if (!newMinerData.error) {
+              // Rebuild worker dropdown preserving selection
+              workerSelect.replaceChildren();
+              populateWorkerDropdown(workerSelect, newMinerData);
+              workerSelect.value = currentWorker;
+              const val = workerSelect.value;
+              if (val && val !== "__all__") {
+                const w = (newMinerData.worker || []).find((wk) => wk.workername === val);
+                if (w) { renderStatsCards(app, w, /* isWorker */ true); }
+                else   { renderStatsCards(app, newMinerData); }
+              } else {
+                renderStatsCards(app, newMinerData);
+              }
+            }
+            setRefreshInfo(app);
+          })
+          .catch(() => { /* silent — keep showing last good data */ });
+      }, 30000);
     })
     .catch(() => {
       hideLoading(statsContent);
@@ -314,13 +343,24 @@ function makeCard(value, label, valueClass = "", wide = false) {
   return card;
 }
 
+/* ── Refresh label helper ────────────────────────────────────────────────── */
+function setRefreshInfo(app) {
+  const el = app.querySelector("#refresh-info");
+  if (!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  el.textContent = `AUTO-REFRESH 30s | UPDATED: ${hh}:${mm}:${ss}`;
+}
+
 /* ── Loading state helpers ───────────────────────────────────────────────── */
 function showLoading(contentEl) {
   contentEl.hidden = true;
   const wrapper = document.createElement("div");
   wrapper.className = "loading";
   wrapper.id = "__loading__";
-  wrapper.innerHTML = '<div class="spinner"></div><span>Loading…</span>';
+  wrapper.innerHTML = '<div class="spinner"></div><span>Loading</span>';
   contentEl.parentNode.insertBefore(wrapper, contentEl);
 }
 
