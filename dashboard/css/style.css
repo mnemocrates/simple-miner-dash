@@ -256,25 +256,29 @@ a:hover { color: var(--green); }
 }
 
 .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: .4rem .75rem;
-  margin-top: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  margin-top: .4rem;
 }
 
 .stat-card {
   display: flex;
-  flex-direction: column;
-  gap: .15rem;
-  padding: .2rem 0;
+  flex-direction: row;
+  gap: .5em;
+  padding: .05rem 0;
+  line-height: 1.4;
+}
+
+.stat-card .stat-label {
+  color: var(--green-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stat-card .stat-value {
-  font-size: 1.05rem;
   color: var(--green);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
 }
 
 .stat-card .stat-value.accent { color: var(--amber); }
@@ -282,20 +286,6 @@ a:hover { color: var(--green); }
 .stat-card .stat-value.muted  { color: var(--green-dim); }
 .stat-card .stat-value.zero   { color: var(--green-faint); }
 .stat-card .stat-value.red    { color: var(--red); }
-
-.stat-card .stat-label {
-  font-size: .65rem;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--green-dim);
-}
-
-/* best share / bestever can be long numbers — allow wrapping */
-.stat-card.wide .stat-value {
-  font-size: .85rem;
-  white-space: normal;
-  word-break: break-all;
-}
 
 /* ── Loading ──────────────────────────────────────────────────────────────── */
 .loading {
@@ -332,11 +322,9 @@ a:hover { color: var(--green); }
   .worker-select-wrap { margin-left: 0; width: 100%; }
   #pool-select,
   #worker-select { max-width: 100%; width: 100%; }
-  .cards-grid { grid-template-columns: repeat(2, 1fr); }
   .refresh-info { margin-left: 0; }
 }
 
 @media (min-width: 900px) {
   .view-stats { padding-top: 1.25rem; }
-  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }

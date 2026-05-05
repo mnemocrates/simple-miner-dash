@@ -330,16 +330,16 @@ function makeCard(value, label, valueClass = "", wide = false) {
   const card  = document.createElement("div");
   card.className = "stat-card" + (wide ? " wide" : "");
 
-  const valEl = document.createElement("div");
+  const lblEl = document.createElement("span");
+  lblEl.className = "stat-label";
+  lblEl.textContent = label + ":";
+
+  const valEl = document.createElement("span");
   valEl.className = "stat-value" + (valueClass ? " " + valueClass : "");
   valEl.textContent = value ?? "—";
 
-  const lblEl = document.createElement("div");
-  lblEl.className = "stat-label";
-  lblEl.textContent = label;
-
-  card.appendChild(valEl);
   card.appendChild(lblEl);
+  card.appendChild(valEl);
   return card;
 }
 
