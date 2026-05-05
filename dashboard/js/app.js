@@ -429,13 +429,12 @@ function formatLargeNumber(value, decimals = 0) {
 function formatTimestamp(epoch) {
   if (!epoch) return "—";
   const d = new Date(Number(epoch) * 1000);
-  return d.toLocaleString(undefined, {
-    year:   "numeric",
-    month:  "short",
-    day:    "numeric",
-    hour:   "2-digit",
-    minute: "2-digit",
-  });
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd}/${yyyy} at ${hh}:${min}`;
 }
 
 /** Colour class for a last-share timestamp (stale if > 30 min old) */
