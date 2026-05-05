@@ -261,7 +261,7 @@ function renderPoolStatsCards(app, data) {
     sh.replaceChildren(
       makeCard(formatLargeNumber(data.accepted),     "Accepted"),
       makeCard(formatLargeNumber(data.rejected),     "Rejected",   data.rejected > 0 ? "red" : ""),
-      makeCard(formatLargeNumber(data.bestshare, 2), "Best Share", "accent", /* wide */ true),
+      makeCard(formatLargeNumber(data.bestshare), "Best Share", "accent", /* wide */ true),
       makeCard(diff,                                 "Difficulty")
     );
   }
@@ -300,7 +300,7 @@ function renderHashrateCards(container, data) {
 function renderSharesCards(container, data) {
   container.replaceChildren(
     makeCard(formatLargeNumber(data.shares),               "Total Shares"),
-    makeCard(formatLargeNumber(data.bestshare, 2),         "Best Share",  "accent", /* wide */ true),
+    makeCard(formatLargeNumber(data.bestshare),         "Best Share",  "accent", /* wide */ true),
     makeCard(formatLargeNumber(data.bestever),             "Best Ever",   "accent", /* wide */ true)
   );
 }
@@ -413,15 +413,21 @@ function hashrateClass(value) {
 
 /**
  * Format a large number (shares, bestshare, bestever) with commas.
- * bestshare can be a float; bestever is always an integer.
+ * Preserves the decimal precision present in the raw value by default.
  */
-function formatLargeNumber(value, decimals = 0) {
+function formatLargeNumber(value, decimals = null) {
   if (value === undefined || value === null) return "—";
   const n = Number(value);
   if (isNaN(n)) return String(value);
+  let dec = decimals;
+  if (dec === null) {
+    const s = String(value);
+    const dot = s.indexOf(".");
+    dec = dot === -1 ? 0 : s.length - dot - 1;
+  }
   return n.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
   });
 }
 
