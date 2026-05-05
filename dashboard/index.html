@@ -11,16 +11,24 @@
     <!-- Rendered by js/app.js -->
   </div>
 
+  <!-- Global error overlay (managed by app.js showError) -->
+  <div id="error-overlay" hidden>
+    <div id="error-box">
+      <button id="error-close" aria-label="Close">[X]</button>
+      <p id="error-message"></p>
+    </div>
+  </div>
+
   <!-- Search view template -->
   <template id="tpl-search">
     <div class="view-search">
       <div class="search-terminal">
         <h1 class="brand">&gt; MINER_DASHBOARD</h1>
-        <p class="subtitle">ENTER BITCOIN ADDRESS:</p>
         <fieldset class="search-card">
           <legend>// query</legend>
           <form id="search-form" novalidate>
             <div class="input-group">
+              <p class="subtitle">ENTER BITCOIN ADDRESS:</p>
               <input
                 id="address-input"
                 type="text"
@@ -67,10 +75,6 @@
       </header>
 
       <div id="address-display" class="address-display"></div>
-
-      <div id="error-banner" class="error-banner" hidden>
-        <span id="error-message"></span>
-      </div>
 
       <div id="stats-content" hidden>
         <!-- ═══ Pool Statistics ═══════════════════════════════════════════ -->

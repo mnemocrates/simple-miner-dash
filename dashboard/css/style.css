@@ -207,24 +207,50 @@ a:hover { color: var(--green); }
   margin-left: auto;
 }
 
-/* ── Error banner ─────────────────────────────────────────────────────────── */
-.error-banner {
-  border-top: 1px solid var(--red);
-  border-bottom: 1px solid var(--red);
-  padding: .6rem 0;
-  margin-top: 1rem;
+/* ── Error overlay ────────────────────────────────────────────────────────── */
+#error-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .82);
   display: flex;
-  flex-direction: column;
-  gap: .4rem;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
 }
 
-.error-banner span { color: var(--red); }
+#error-overlay[hidden] { display: none; }
 
-.error-back {
-  font-size: .78rem;
+#error-box {
+  position: relative;
+  border: 1px solid var(--red);
+  padding: 1.4rem 1.6rem 1.2rem;
+  max-width: 440px;
+  width: 90%;
+  background: #000;
+}
+
+#error-box p {
+  color: var(--red);
+  margin: 0;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+#error-close {
+  position: absolute;
+  top: .35rem;
+  right: .5rem;
+  background: none;
+  border: none;
   color: var(--green-dim);
+  font-family: var(--mono);
+  font-size: .8rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
 }
-.error-back:hover { color: var(--green); }
+
+#error-close:hover { color: var(--green); }
 
 /* ── Stats sections & cards ───────────────────────────────────────────────── */
 .stats-group-label {

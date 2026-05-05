@@ -99,7 +99,6 @@ function renderStatsView(address, pool) {
 
   // Show loading spinner while fetching
   const statsContent  = app.querySelector("#stats-content");
-  const errorBanner   = app.querySelector("#error-banner");
   const workerSelect  = app.querySelector("#worker-select");
 
   showLoading(statsContent);
@@ -112,7 +111,7 @@ function renderStatsView(address, pool) {
       populatePoolSelect(poolSelect, pools, pool);
 
       if (minerData.error) {
-        showError(errorBanner, errorMessage(minerData.error));
+        showError(errorMessage(minerData.error));
         // Still render pool stats even if miner lookup failed
         renderPoolStatsCards(app, poolData);
         statsContent.hidden = false;
@@ -167,7 +166,7 @@ function renderStatsView(address, pool) {
     })
     .catch(() => {
       hideLoading(statsContent);
-      showError(errorBanner, "Could not connect to the server. Please try again later.");
+      showError("Could not connect to the server. Please try again later.");
     });
 }
 
@@ -369,10 +368,15 @@ function hideLoading(contentEl) {
   if (existing) existing.remove();
 }
 
-/* ── Error banner helper ─────────────────────────────────────────────────── */
-function showError(bannerEl, message) {
-  bannerEl.querySelector("#error-message").textContent = message;
-  bannerEl.hidden = false;
+/* ── Error overlay helper ────────────────────────────────────────────────── */
+function showError(message) {
+  const overlay = document.getElementById("error-overlay");
+  document.getElementById("error-message").textContent = message;
+  overlay.hidden = false;
+
+  const dismiss = () => { overlay.hidden = true; };
+  document.getElementById("error-close").onclick = dismiss;
+  overlay.onclick = (e) => { if (e.target === overlay) dismiss(); };
 }
 
 function errorMessage(code) {
